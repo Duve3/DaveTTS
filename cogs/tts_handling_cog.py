@@ -211,7 +211,7 @@ class TTSHandling(commands.Cog):
                 if i == len(parts) - 1:
                     new_text += part
                 else:
-                    new_text += part + (" quote, " if i % 2 == 0 else ", unquote ")
+                    new_text += part + (" quote unquote " if i % 2 == 0 else ", ")
             text = new_text
 
         target_symbols = '#$%&^*~{}[]|<>/\\'
