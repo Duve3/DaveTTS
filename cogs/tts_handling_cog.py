@@ -286,10 +286,31 @@ class TTSHandling(commands.Cog):
                 if not raw_pcm:
                     continue
 
+                # --- NEW: AUDIO NORMALIZATION ---
+                # 1. Measure the current loudness of this specific sentence
+                # The '2' means it's 16-bit (2-byte) audio
+                current_loudness = audioop.rms(raw_pcm, 2)
+
+                # 2. Define our target loudness (you may need to tweak this number, ~4000-6000 is usually good for Discord)
+                TARGET_LOUDNESS = 4000
+
+                if 0 < current_loudness < TARGET_LOUDNESS:
+                    # Calculate how much we need to multiply the volume to reach the target
+                    volume_multiplier = TARGET_LOUDNESS / current_loudness
+
+                    # Cap the multiplier at 3.0x to prevent destroying the speakers on a sudden loud noise (like a breath or click)
+                    volume_multiplier = min(volume_multiplier, 3.0)
+
+                    # Multiply the raw PCM bytes by the factor
+                    raw_pcm = audioop.mul(raw_pcm, 2, volume_multiplier)
+                # ---------------------------------
+
+                # Resample and convert to Stereo
                 native_rate = voice.config.sample_rate if hasattr(voice, "config") else 22050
                 resampled, audio_state = audioop.ratecv(raw_pcm, 2, 1, native_rate, 48000, audio_state)
                 stereo = audioop.tostereo(resampled, 2, 1, 1)
 
+                # Push safely to the stream
                 audio_source.add_data(stereo)
 
         except Exception as e:
